@@ -20,6 +20,7 @@
 # Version history:
 # v1.0 : first version
 
+import os
 import sys
 import socket
 import pathlib
@@ -81,11 +82,18 @@ class DNSUpdater:
         else:
             print(f"The IP address didn't change.")
 
+    # Retrieve the path to the ini file.
+    def getIniFilePath(self):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, CONFIG_FILE)
+        return filename
+
     # Update the A record of the given host.
     # host : the host to update.
+    # current_ip_address : current IP address to update.
     def __updateARecord(self, host, current_ip_address):
         url = self.__liveDNSRecordUrl.replace("{host}", host)
-        data = {"rrset_values": [ current_ip_address ]}
+        data = {"rrset_values": [current_ip_address]}
         headers = {"Content-type": "application/json",
                    "Authorization": f"ApiKey {self.__apikey}"}
         request = requests.put(url, data=json.dumps(data), headers=headers)
@@ -97,11 +105,11 @@ class DNSUpdater:
     # Create the config file with the minimal settings if is doesn't exists to
     # help the user to configure the tool.
     def __createConfigTemplateIfDoesntExist(self):
-        settings = pathlib.Path(CONFIG_FILE)
+        settings = pathlib.Path(self.getIniFilePath())
         if not settings.exists():
             # The ip is empty because to initialize it we need the
             # ddnsHostname set. Only the user can set the ddnsHostname value.
-            settings = open(CONFIG_FILE, "w")
+            settings = open(self.getIniFilePath(), "w")
             settings.write("[General]\n")
             settings.write("#apikey=YOUR_GANDI_API_KEY\n")
             settings.write("#ddnsHostname=DYNAMIC_DNS_HOST\n")
@@ -115,7 +123,7 @@ class DNSUpdater:
     # Read the configuration from the ini file to set the Gandi's class fields.
     def __readConfig(self):
         parser = configparser.ConfigParser()
-        dataset = parser.read(CONFIG_FILE)
+        dataset = parser.read(self.getIniFilePath())
         if len(dataset) > 0:
             self.__ip = parser.get("General", "ip", fallback=None)
             self.__apikey = parser.get("General", "apikey", fallback=None)
@@ -131,7 +139,7 @@ class DNSUpdater:
     # Check if the mandatory settings are set. If not, quit the script with an
     # error.
     def __checkConfig(self):
-        settings = pathlib.Path(CONFIG_FILE)
+        settings = pathlib.Path(self.getIniFilePath())
         # We must check the IP at the end to be sure the apikey and the
         # ddnsHostname are set.
         if not settings.exists():
@@ -155,7 +163,7 @@ class DNSUpdater:
     # Retrieve the previous IP address from the data file
     def __getPreviousIPAddress(self):
         parser = configparser.ConfigParser()
-        dataset = parser.read(CONFIG_FILE)
+        dataset = parser.read(self.getIniFilePath())
         if len(dataset) > 0:
             ip_address = parser.get("General", "ip", fallback=None)
             if (ip_address == None or ip_address == ""):
@@ -169,11 +177,11 @@ class DNSUpdater:
     # Save the current IP address to the data file
     def __saveCurrentIPAddress(self):
         parser = configparser.ConfigParser()
-        dataset = parser.read(CONFIG_FILE)
+        dataset = parser.read(self.getIniFilePath())
         if len(dataset) > 0:
             self.__ip = self.__getCurrentIpAddress()
             parser.set("General", "ip", self.__ip)
-            with open(CONFIG_FILE, "w") as configFile:
+            with open(self.getIniFilePath(), "w") as configFile:
                 parser.write(configFile)
 
     # Retrieve the current IP address of the server (using a dynamic IP address
