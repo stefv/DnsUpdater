@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# If you need to install modules, just use: pip install <module_name>
-# The original web site of this script is: https://github.com/stefv/GandiDnsUpdater
+# If you need to install modules, just use: pip3 install <module_name>
+# The original web site of this script is: https://github.com/stefv/DnsUpdater
 
 # Version history:
 # v1.0 : first version
@@ -27,7 +27,7 @@ import configparser
 import requests
 import json
 
-CONFIG_FILE = "gandi.ini"
+CONFIG_FILE = "dns_updater.ini"
 
 # This class will update the A record of your domain hosted by Gandi.net. To
 # use it, you need to have an API key. Follow the instructions here:
@@ -38,11 +38,11 @@ CONFIG_FILE = "gandi.ini"
 # Just use crontab to call this script every 5 minutes. When the IP of your box
 # will change, this script will update the A record of the DNS.
 # When you start for the first time this script, a gandi.ini file is created
-# with default settings. Go to the https://github.com/stefv/GandiDnsUpdater web
+# with default settings. Go to the https://github.com/stefv/DnsUpdater web
 # site to have a better description of the options.
 
 
-class Gandi:
+class DNSUpdater:
 
     # Last IP address
     __ip = None
@@ -76,16 +76,16 @@ class Gandi:
             self.__saveCurrentIPAddress()
             hosts = self.__hosts.split(",")
             for host in hosts:
-                self.__updateARecord(host)
+                self.__updateARecord(host, current_ip_address)
             print(f"IP address updated on Gandi.")
         else:
             print(f"The IP address didn't change.")
 
     # Update the A record of the given host.
     # host : the host to update.
-    def __updateARecord(self, host):
+    def __updateARecord(self, host, current_ip_address):
         url = self.__liveDNSRecordUrl.replace("{host}", host)
-        data = {"rrset_values": ["81.249.143.153"]}
+        data = {"rrset_values": [ current_ip_address ]}
         headers = {"Content-type": "application/json",
                    "Authorization": f"ApiKey {self.__apikey}"}
         request = requests.put(url, data=json.dumps(data), headers=headers)
@@ -184,12 +184,12 @@ class Gandi:
 
 
 print("===================================================")
-print("= GANDI DNS Updater                               =")
+print("= DNS Updater                                     =")
 print("= Script to update the IP address of the A record =")
 print("===================================================\n")
 
 # Update the IP address of the host in the DNS of Gandi
-gandi = Gandi()
-gandi.updateARecords()
+dnsUpdater = DNSUpdater()
+dnsUpdater.updateARecords()
 
 print("Bye !\n\n")
