@@ -44,7 +44,7 @@ It requires the following Python modules:
 - requests
 - json
 
-If a module is missing, it must be installed using the command: _pip3 install <nom_module>_
+If a module is missing, it must be installed using the command: pip3 install <module_name>
 
 ## Configuration
 
