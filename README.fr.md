@@ -54,11 +54,12 @@ Lors du lancement du script pour la première fois, un fichier de configuration 
 
 ```
 [General]
-#apikey=YOUR_GANDI_API_KEY
+version=1
 #ddnsHostname=DYNAMIC_DNS_HOST
 ip=
 
-[Services]
+[Gandi]
+#apikey=YOUR_GANDI_API_KEY
 livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A
 hosts=YOUR_HOSTS_SEPARATED_BY_COMMA
 ```

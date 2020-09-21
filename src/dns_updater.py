@@ -28,6 +28,7 @@ import configparser
 import requests
 import json
 
+VERSION = "1"
 CONFIG_FILE = "dns_updater.ini"
 
 # This class will update the A record of your domain hosted by Gandi.net. To
@@ -43,7 +44,10 @@ CONFIG_FILE = "dns_updater.ini"
 # site to have a better description of the options.
 
 
-class DNSUpdater:
+class DNSUpdater(object):
+
+    # Script version
+    __version = None
 
     # Last IP address
     __ip = None
@@ -111,27 +115,45 @@ class DNSUpdater:
             # ddnsHostname set. Only the user can set the ddnsHostname value.
             settings = open(self.getIniFilePath(), "w")
             settings.write("[General]\n")
-            settings.write("#apikey=YOUR_GANDI_API_KEY\n")
+            settings.write("version=1\n")
             settings.write("#ddnsHostname=DYNAMIC_DNS_HOST\n")
             settings.write("ip=\n\n")
-            settings.write("[Services]\n")
+            # settings.write("[Reports]\n")
+            # settings.write("errorLog=error.log\n")
+            # settings.write("infoLog=info.log\n")
+            # settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
+            # settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
+            settings.write("[Gandi]\n")
+            settings.write("#apikey=YOUR_GANDI_API_KEY\n")
             settings.write(
                 "livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A\n")
             settings.write("#hosts=YOUR_HOSTS_SEPARATED_BY_COMMA\n")
             settings.close()
+
+            sys.stdout.write("Creating a template file for the settings.")
+            sys.exit(1)
 
     # Read the configuration from the ini file to set the Gandi's class fields.
     def __readConfig(self):
         parser = configparser.ConfigParser()
         dataset = parser.read(self.getIniFilePath())
         if len(dataset) > 0:
+            self.__version = parser.get("General", "version", fallback=None)
+            if (self.__version != VERSION):
+                sys.stderr.write(
+                    f"The configuration file is for version {self.__version} but the script is for version {VERSION}.\n")
+                sys.stderr.write(
+                    f"Please, upgrade your configuration file to respect the new format.\n")
+                sys.stderr.write(
+                    f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
+                sys.exit(1)
             self.__ip = parser.get("General", "ip", fallback=None)
-            self.__apikey = parser.get("General", "apikey", fallback=None)
             self.__ddnsHostname = parser.get(
                 "General", "ddnsHostname", fallback=None)
+            self.__apikey = parser.get("Gandi", "apikey", fallback=None)
             self.__liveDNSRecordUrl = parser.get(
-                "Services", "livednsRecordUrl", fallback=None)
-            self.__hosts = parser.get("Services", "hosts", fallback=None)
+                "Gandi", "livednsRecordUrl", fallback=None)
+            self.__hosts = parser.get("Gandi", "hosts", fallback=None)
         else:
             sys.stderr.write("Can't find the configuration file.\n")
             sys.exit(1)
