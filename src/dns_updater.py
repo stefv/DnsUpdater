@@ -27,9 +27,14 @@ import pathlib
 import configparser
 import requests
 import json
+import datetime
 
 VERSION = "1"
 CONFIG_FILE = "dns_updater.ini"
+
+GENERAL_SECTION = "General"
+REPORTS_SECTION = "Reports"
+GANDI_SECTION = "Gandi"
 
 # This class will update the A record of your domain hosted by Gandi.net. To
 # use it, you need to have an API key. Follow the instructions here:
@@ -46,6 +51,9 @@ CONFIG_FILE = "dns_updater.ini"
 
 class DNSUpdater(object):
 
+    # The logger
+    __logger = None
+
     # Script version
     __version = None
 
@@ -61,11 +69,12 @@ class DNSUpdater(object):
     # URL for the service to manage the records
     __liveDNSRecordUrl = None
 
-    # Hosts to update.
+    # Hosts to update
     __hosts = None
 
     # Initialize the configuration file.
     def __init__(self):
+        self.__logger = Logger()
         self.__createConfigTemplateIfDoesntExist()
         self.__readConfig()
         self.__checkConfig()
@@ -75,19 +84,19 @@ class DNSUpdater(object):
     def updateARecords(self):
         previous_ip_address = self.__getPreviousIPAddress()
         current_ip_address = self.__getCurrentIpAddress()
-        print(f"Current IP address:  {current_ip_address}")
+        self.__logger.info(f"Current IP address:  {current_ip_address}")
         if (previous_ip_address != current_ip_address):
-            print(f"Previous IP address: {previous_ip_address}")
+            self.__logger.info(f"Previous IP address: {previous_ip_address}")
             self.__saveCurrentIPAddress()
             hosts = self.__hosts.split(",")
             for host in hosts:
                 self.__updateARecord(host, current_ip_address)
-            print(f"IP address updated on Gandi.")
+            self.__logger.info(f"IP address updated on Gandi.")
         else:
-            print(f"The IP address didn't change.")
+            self.__logger.info(f"The IP address didn't change.")
 
     # Retrieve the path to the ini file.
-    def getIniFilePath(self):
+    def __getIniFilePath(self):
         dirname = os.path.dirname(__file__)
         filename = os.path.join(dirname, CONFIG_FILE)
         return filename
@@ -102,82 +111,80 @@ class DNSUpdater(object):
                    "Authorization": f"ApiKey {self.__apikey}"}
         request = requests.put(url, data=json.dumps(data), headers=headers)
         if (request.status_code == 201):
-            sys.stdout.write(f"IP address for {host} updated.\n")
+            self.__logger.info(f"IP address for {host} updated.")
         else:
-            sys.stderr.write(f"Can't update the IP address for {host}.\n")
+            self.__logger.error(f"Can't update the IP address for {host}.")
 
     # Create the config file with the minimal settings if is doesn't exists to
     # help the user to configure the tool.
     def __createConfigTemplateIfDoesntExist(self):
-        settings = pathlib.Path(self.getIniFilePath())
+        settings = pathlib.Path(self.__getIniFilePath())
         if not settings.exists():
             # The ip is empty because to initialize it we need the
             # ddnsHostname set. Only the user can set the ddnsHostname value.
-            settings = open(self.getIniFilePath(), "w")
-            settings.write("[General]\n")
+            settings = open(self.__getIniFilePath(), "w")
+            settings.write(f"[{GENERAL_SECTION}]\n")
             settings.write("version=1\n")
             settings.write("#ddnsHostname=DYNAMIC_DNS_HOST\n")
             settings.write("ip=\n\n")
-            # settings.write("[Reports]\n")
+            # settings.write(f"[{REPORTS_SECTION}]\n")
             # settings.write("errorLog=error.log\n")
             # settings.write("infoLog=info.log\n")
             # settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
             # settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
-            settings.write("[Gandi]\n")
+            settings.write(f"[{GANDI_SECTION}]\n")
             settings.write("#apikey=YOUR_GANDI_API_KEY\n")
             settings.write(
                 "livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A\n")
             settings.write("#hosts=YOUR_HOSTS_SEPARATED_BY_COMMA\n")
             settings.close()
 
-            sys.stdout.write("Creating a template file for the settings.")
+            self.__logger.error("Creating a template file for the settings.")
             sys.exit(1)
 
     # Read the configuration from the ini file to set the Gandi's class fields.
     def __readConfig(self):
         parser = configparser.ConfigParser()
-        dataset = parser.read(self.getIniFilePath())
+        dataset = parser.read(self.__getIniFilePath())
         if len(dataset) > 0:
-            self.__version = parser.get("General", "version", fallback=None)
+            self.__version = parser.get(
+                GENERAL_SECTION, "version", fallback=None)
             if (self.__version != VERSION):
-                sys.stderr.write(
-                    f"The configuration file is for version {self.__version} but the script is for version {VERSION}.\n")
-                sys.stderr.write(
-                    f"Please, upgrade your configuration file to respect the new format.\n")
-                sys.stderr.write(
-                    f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
+                self.__logger.info(
+                    f"The configuration file is for version {self.__version} but the script is for version {VERSION}. Please, upgrade your configuration file to respect the new format. If you don't know this format, just rename your old ini file and start again\nthe script.")
                 sys.exit(1)
-            self.__ip = parser.get("General", "ip", fallback=None)
+            self.__ip = parser.get(GENERAL_SECTION, "ip", fallback=None)
             self.__ddnsHostname = parser.get(
-                "General", "ddnsHostname", fallback=None)
-            self.__apikey = parser.get("Gandi", "apikey", fallback=None)
+                GENERAL_SECTION, "ddnsHostname", fallback=None)
+            self.__apikey = parser.get(GANDI_SECTION, "apikey", fallback=None)
             self.__liveDNSRecordUrl = parser.get(
-                "Gandi", "livednsRecordUrl", fallback=None)
-            self.__hosts = parser.get("Gandi", "hosts", fallback=None)
+                GANDI_SECTION, "livednsRecordUrl", fallback=None)
+            self.__hosts = parser.get(GANDI_SECTION, "hosts", fallback=None)
         else:
-            sys.stderr.write("Can't find the configuration file.\n")
+            self.__logger.error("Can't find the configuration file.\n")
             sys.exit(1)
 
     # Check if the mandatory settings are set. If not, quit the script with an
     # error.
     def __checkConfig(self):
-        settings = pathlib.Path(self.getIniFilePath())
+        settings = pathlib.Path(self.__getIniFilePath())
         # We must check the IP at the end to be sure the apikey and the
         # ddnsHostname are set.
         if not settings.exists():
-            sys.stderr.write("Can't find the configuration file.\n")
+            self.__logger.error("Can't find the configuration file.\n")
             sys.exit(1)
         if (self.__apikey == None):
-            sys.stderr.write("Empty setting for General/apikey.\n")
+            self.__logger.error("Empty setting for General/apikey.\n")
             sys.exit(1)
         if (self.__ddnsHostname == None):
-            sys.stderr.write("Empty setting for General/ddnsHostname.\n")
+            self.__logger.error("Empty setting for General/ddnsHostname.\n")
             sys.exit(1)
         if (self.__liveDNSRecordUrl == None):
-            sys.stderr.write("Empty setting for General/liveDNSRecordUrl.\n")
+            self.__logger.error(
+                "Empty setting for General/liveDNSRecordUrl.\n")
             sys.exit(1)
         if (self.__hosts == None):
-            sys.stderr.write("Empty setting for General/hosts.\n")
+            self.__logger.error("Empty setting for General/hosts.\n")
             sys.exit(1)
         if (self.__ip == None or self.__ip == ""):
             self.__saveCurrentIPAddress()
@@ -185,25 +192,25 @@ class DNSUpdater(object):
     # Retrieve the previous IP address from the data file
     def __getPreviousIPAddress(self):
         parser = configparser.ConfigParser()
-        dataset = parser.read(self.getIniFilePath())
+        dataset = parser.read(self.__getIniFilePath())
         if len(dataset) > 0:
-            ip_address = parser.get("General", "ip", fallback=None)
+            ip_address = parser.get(GENERAL_SECTION, "ip", fallback=None)
             if (ip_address == None or ip_address == ""):
                 self.__saveCurrentIPAddress()
                 ip_address = self.__ip
         else:
             ip_address = self.__getCurrentIpAddress()
-            parser.set("General", "ip", ip_address)
+            parser.set(GENERAL_SECTION, "ip", ip_address)
         return ip_address
 
     # Save the current IP address to the data file
     def __saveCurrentIPAddress(self):
         parser = configparser.ConfigParser()
-        dataset = parser.read(self.getIniFilePath())
+        dataset = parser.read(self.__getIniFilePath())
         if len(dataset) > 0:
             self.__ip = self.__getCurrentIpAddress()
-            parser.set("General", "ip", self.__ip)
-            with open(self.getIniFilePath(), "w") as configFile:
+            parser.set(GENERAL_SECTION, "ip", self.__ip)
+            with open(self.__getIniFilePath(), "w") as configFile:
                 parser.write(configFile)
 
     # Retrieve the current IP address of the server (using a dynamic IP address
@@ -212,14 +219,72 @@ class DNSUpdater(object):
         ip_address = socket.gethostbyname(self.__ddnsHostname)
         return ip_address
 
+#
+
+
+class Logger(object):
+
+    # The error log file from the ini.
+    __errorLog = None
+
+    # The info log file from the ini.
+    __infoLog = None
+
+    # Create and initialize the logger.
+    def __init__(self):
+        self.__readConfig()
+
+    # Read the ini file if it exists.
+    def __readConfig(self):
+        parser = configparser.ConfigParser()
+        dataset = parser.read(self.__getIniFilePath())
+        if len(dataset) > 0:
+            self.__version = parser.get(
+                GENERAL_SECTION, "version", fallback=None)
+            if (self.__version != VERSION):
+                sys.stderr.write(
+                    f"The configuration file is for version {self.__version} but the script is for version {VERSION}.\n")
+                sys.stderr.write(
+                    f"Please, upgrade your configuration file to respect the new format.\n")
+                sys.stderr.write(
+                    f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
+                sys.exit(1)
+            self.__errorLog = parser.get(
+                REPORTS_SECTION, "errorLog", fallback=None)
+            self.__infoLog = parser.get(
+                REPORTS_SECTION, "infoLog", fallback=None)
+        else:
+            sys.stderr.write("Can't find the configuration file.\n")
+            sys.exit(1)
+
+    # Retrieve the path to the ini file.
+    def __getIniFilePath(self):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, CONFIG_FILE)
+        return filename
+
+    # Log an error message. Write the message to the stderr and if the errorLog
+    # parameter is set, write it also to the error log file.
+    def error(self, message):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sys.stderr.write(f"{now} - {message}\n")
+        # self.errorLog
+
+    # Log an info message. Write the message to the stdout and if the infoLog
+    # parameter is set, write it also to the info log file.
+    def info(self, message):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sys.stdout.write(f"{now} - {message}\n")
+        # self.errorLog
+
 
 print("===================================================")
 print("= DNS Updater                                     =")
 print("= Script to update the IP address of the A record =")
-print("===================================================\n")
+print("===================================================")
 
 # Update the IP address of the host in the DNS of Gandi
 dnsUpdater = DNSUpdater()
 dnsUpdater.updateARecords()
 
-print("Bye !\n\n")
+print("Bye !")

@@ -43,6 +43,7 @@ Il nécessite les modules Python suivants:
 - configparser
 - requests
 - json
+- datetime
 
 Si un module est manquant, il est nécessaire de l'installer au moyen de la commande: _pip3 install <nom_module>_
 
@@ -66,13 +67,14 @@ hosts=YOUR_HOSTS_SEPARATED_BY_COMMA
 
 Le script se terminera alors et s'arrêtera à chaque fois tant que les paramètres obligatoires n'auront pas été valorisés et décommentés
 
-| Paramètre        | Obligatoire | Description                                                                                                                                              |
-| ---------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| apikey           | oui         | La clé API REST de Gandi. Reportez-vous à la page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                         |
-| ddnsHostname     | oui         | Le nom de domaine hébergé dans le service de domaine dynamique (par exemple: monsite.ddns.net)                                                           |
-| ip               | non         | Sera valorisé automatiquement au premier lancement lorsque les paramètres obligatoires auront été renseignés                                             |
-| livednsRecordUrl | oui         | URL d'appel au service de mise à jour de l'enregistrement A chez Gandi. Normalement on n'y touche pas sans savoir ce que l'on fait                       |
-| hosts            | oui         | La liste des noms de domaines chez Gandi séparés par des virgules (par exemple: monsite1.org,monsite2.net,monsite3.fr). Il ne doit y avoir aucun espace. |
+| Section | Paramètre        | Obligatoire | Description                                                                                                                                              |
+| ------- | ---------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| General | version          | oui         | Version du script pour ce fichier INI.                                                                                                                   |
+| General | ip               | non         | Sera valorisé automatiquement au premier lancement lorsque les paramètres obligatoires auront été renseignés                                             |
+| General | ddnsHostname     | oui         | Le nom de domaine hébergé dans le service de domaine dynamique (par exemple: monsite.ddns.net)                                                           |
+| Gandi   | apikey           | oui         | La clé API REST de Gandi. Reportez-vous à la page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                         |
+| Gandi   | livednsRecordUrl | oui         | URL d'appel au service de mise à jour de l'enregistrement A chez Gandi. Normalement on n'y touche pas sans savoir ce que l'on fait                       |
+| Gandi   | hosts            | oui         | La liste des noms de domaines chez Gandi séparés par des virgules (par exemple: monsite1.org,monsite2.net,monsite3.fr). Il ne doit y avoir aucun espace. |
 
 ### Droits
 

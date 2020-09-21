@@ -43,6 +43,7 @@ It requires the following Python modules:
 - configparser
 - requests
 - json
+- datetime
 
 If a module is missing, it must be installed using the command: pip3 install <module_name>
 
@@ -66,13 +67,14 @@ hosts=YOUR_HOSTS_SEPARATED_BY_COMMA
 
 The script will then end and stop each time as long as the mandatory parameters have not been valued and uncommented.
 
-| Paramètre        | Obligatoire | Description                                                                                                                         |
-| ---------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| apikey           | oui         | Gandi's REST API key. Refer to page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                  |
-| ddnsHostname     | oui         | The name of the domain hosted in the dynamic domain service (for example: mysite.ddns.net)                                          |
-| ip               | non         | Will be automatically valued at the first launch when the mandatory parameters have been setted                                     |
-| livednsRecordUrl | oui         | URL for calling the A record update service at Gandi. Normally we don't touch it without knowing what we're doing                   |
-| hosts            | oui         | The list of domain names at Gandi separated by commas (for example: mysite1.org,mysite2.net,mysite3.com). There should be no space. |
+| Section | Setting          | Mandatory | Description                                                                                                                         |
+| ------- | ---------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| General | version          | yes       | Version of the script for this INI file. |
+| General | ip               | no        | Will be automatically valued at the first launch when the mandatory parameters have been setted                                     |
+| General | ddnsHostname     | yes       | The name of the domain hosted in the dynamic domain service (for example: mysite.ddns.net)                                          |
+| Gandi   | apikey           | yes       | Gandi's REST API key. Refer to page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                  |
+| Gandi   | livednsRecordUrl | yes       | URL for calling the A record update service at Gandi. Normally we don't touch it without knowing what we're doing                   |
+| Gandi   | hosts            | yes       | The list of domain names at Gandi separated by commas (for example: mysite1.org,mysite2.net,mysite3.com). There should be no space. |
 
 ### Rights
 
