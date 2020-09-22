@@ -28,6 +28,8 @@ import configparser
 import requests
 import json
 import datetime
+import logging
+import logging.handlers
 
 VERSION = "1"
 CONFIG_FILE = "dns_updater.ini"
@@ -74,8 +76,8 @@ class DNSUpdater(object):
 
     # Initialize the configuration file.
     def __init__(self):
-        self.__logger = Logger()
         self.__createConfigTemplateIfDoesntExist()
+        self.__logger = Logger()
         self.__readConfig()
         self.__checkConfig()
 
@@ -127,11 +129,10 @@ class DNSUpdater(object):
             settings.write("version=1\n")
             settings.write("#ddnsHostname=DYNAMIC_DNS_HOST\n")
             settings.write("ip=\n\n")
-            # settings.write(f"[{REPORTS_SECTION}]\n")
-            # settings.write("errorLog=error.log\n")
-            # settings.write("infoLog=info.log\n")
-            # settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
-            # settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
+            settings.write(f"[{REPORTS_SECTION}]\n")
+            settings.write("logFile=dns_updater.log\n")
+            settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
+            settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
             settings.write(f"[{GANDI_SECTION}]\n")
             settings.write("#apikey=YOUR_GANDI_API_KEY\n")
             settings.write(
@@ -139,7 +140,7 @@ class DNSUpdater(object):
             settings.write("#hosts=YOUR_HOSTS_SEPARATED_BY_COMMA\n")
             settings.close()
 
-            self.__logger.error("Creating a template file for the settings.")
+            sys.stderr.write("Creating a template file for the settings.\n")
             sys.exit(1)
 
     # Read the configuration from the ini file to set the Gandi's class fields.
@@ -219,20 +220,41 @@ class DNSUpdater(object):
         ip_address = socket.gethostbyname(self.__ddnsHostname)
         return ip_address
 
-#
+# This class is to log the messages (errors, informations) to the stderr and/or
+# stdout. If the settings are correct, it will log also to the error log file
+# and/or the info log file.
 
 
 class Logger(object):
 
-    # The error log file from the ini.
-    __errorLog = None
+    # The log file from the ini.
+    __logFile = None
 
-    # The info log file from the ini.
-    __infoLog = None
+    # When to rotate the log file.
+    __logFileWhen = "midnight"
+
+    # Interval in seconds.
+    __logFileInterval = 3600
+
+    # How many files to keep in the history.
+    __logFileBackupCount = 10
+
+    # The logger instance.
+    __logger = None
 
     # Create and initialize the logger.
     def __init__(self):
         self.__readConfig()
+        if self.__logFile != None:
+            formatter = logging.Formatter("%(asctime)s - %(message)s")
+            handler = logging.handlers.TimedRotatingFileHandler(
+                self.__logFile, when=self.__logFileWhen, interval=self.__logFileInterval, backupCount=self.__logFileBackupCount)
+            handler.setFormatter(formatter)
+            self.__logger = logging.getLogger()
+            self.__logger.addHandler(handler)
+            self.__logger.setLevel(logging.INFO)
+        else:
+            logging.basicConfig(format="%(asctime)s %(message)s")
 
     # Read the ini file if it exists.
     def __readConfig(self):
@@ -249,10 +271,14 @@ class Logger(object):
                 sys.stderr.write(
                     f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
                 sys.exit(1)
-            self.__errorLog = parser.get(
-                REPORTS_SECTION, "errorLog", fallback=None)
-            self.__infoLog = parser.get(
-                REPORTS_SECTION, "infoLog", fallback=None)
+            self.__logFile = parser.get(
+                REPORTS_SECTION, "logFile", fallback=None)
+            self.__logFileWhen = parser.get(
+                REPORTS_SECTION, "logFileWhen", fallback="midnight")
+            self.__logFileInterval = parser.getint(
+                REPORTS_SECTION, "logFileInterval", fallback=3600)
+            self.__logFileBackupCount = parser.getint(
+                REPORTS_SECTION, "logFileBackupCount", fallback=10)
         else:
             sys.stderr.write("Can't find the configuration file.\n")
             sys.exit(1)
@@ -266,16 +292,16 @@ class Logger(object):
     # Log an error message. Write the message to the stderr and if the errorLog
     # parameter is set, write it also to the error log file.
     def error(self, message):
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         sys.stderr.write(f"{now} - {message}\n")
-        # self.errorLog
+        self.__logger.error(message)
 
     # Log an info message. Write the message to the stdout and if the infoLog
     # parameter is set, write it also to the info log file.
     def info(self, message):
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         sys.stdout.write(f"{now} - {message}\n")
-        # self.errorLog
+        self.__logger.info(message)
 
 
 print("===================================================")

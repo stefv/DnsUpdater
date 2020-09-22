@@ -44,6 +44,7 @@ It requires the following Python modules:
 - requests
 - json
 - datetime
+- logging
 
 If a module is missing, it must be installed using the command: pip3 install <module_name>
 
@@ -59,6 +60,12 @@ version=1
 #ddnsHostname=DYNAMIC_DNS_HOST
 ip=
 
+[Reports]
+logFile=dns_updater.log
+logFileWhen=midnight
+logFileInterval=3600
+logFileBackupCount=10
+
 [Gandi]
 #apikey=YOUR_GANDI_API_KEY
 livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A
@@ -67,14 +74,18 @@ hosts=YOUR_HOSTS_SEPARATED_BY_COMMA
 
 The script will then end and stop each time as long as the mandatory parameters have not been valued and uncommented.
 
-| Section | Setting          | Mandatory | Description                                                                                                                         |
-| ------- | ---------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| General | version          | yes       | Version of the script for this INI file. |
-| General | ip               | no        | Will be automatically valued at the first launch when the mandatory parameters have been setted                                     |
-| General | ddnsHostname     | yes       | The name of the domain hosted in the dynamic domain service (for example: mysite.ddns.net)                                          |
-| Gandi   | apikey           | yes       | Gandi's REST API key. Refer to page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                  |
-| Gandi   | livednsRecordUrl | yes       | URL for calling the A record update service at Gandi. Normally we don't touch it without knowing what we're doing                   |
-| Gandi   | hosts            | yes       | The list of domain names at Gandi separated by commas (for example: mysite1.org,mysite2.net,mysite3.com). There should be no space. |
+| Section | Setting            | Mandatory | Description                                                                                                                                                                                |
+| ------- | ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| General | version            | yes       | Version of the script for this INI file.                                                                                                                                                   |
+| General | ip                 | no        | Will be automatically valued at the first launch when the mandatory parameters have been setted                                                                                            |
+| General | ddnsHostname       | yes       | The name of the domain hosted in the dynamic domain service (for example: mysite.ddns.net)                                                                                                 |
+| Reports | logFile            | non       | Path to the log file.                                                                                                                                                                      |
+| Reports | logFileWhen        | non       | Set when to rotate the file. The possible values are: S (seconds), M (minutes), H (hours), D (days), midnight (rotation at midnight) W{0-6} (days of the week starting with 0 for Monday). |
+| Reports | logFileInterval    | non       | The interval in seconds, minutes, days, ....                                                                                                                                               |
+| Reports | logFileBackupCount | non       | Number of history to keep.                                                                                                                                                                 |
+| Gandi   | apikey             | yes       | Gandi's REST API key. Refer to page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                                                                         |
+| Gandi   | livednsRecordUrl   | yes       | URL for calling the A record update service at Gandi. Normally we don't touch it without knowing what we're doing                                                                          |
+| Gandi   | hosts              | yes       | The list of domain names at Gandi separated by commas (for example: mysite1.org,mysite2.net,mysite3.com). There should be no space.                                                        |
 
 ### Rights
 
