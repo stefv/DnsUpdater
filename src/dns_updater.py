@@ -35,7 +35,8 @@ VERSION = "1"
 CONFIG_FILE = "dns_updater.ini"
 
 GENERAL_SECTION = "General"
-REPORTS_SECTION = "Reports"
+LOGGING_SECTION = "Logging"
+EMAIL_SECTION = "Email"
 GANDI_SECTION = "Gandi"
 
 # This class will update the A record of your domain hosted by Gandi.net. To
@@ -129,10 +130,14 @@ class DNSUpdater(object):
             settings.write("version=1\n")
             settings.write("#ddnsHostname=DYNAMIC_DNS_HOST\n")
             settings.write("ip=\n\n")
-            settings.write(f"[{REPORTS_SECTION}]\n")
+            settings.write(f"[{LOGGING_SECTION}]\n")
             settings.write("logFile=dns_updater.log\n")
-            settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
-            settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
+            settings.write("logFileWhen=midnight\n")
+            settings.write("logFileInterval=3600\n")
+            settings.write("logFileBackupCount=10\n\n")
+            # settings.write(f"[{EMAIL_SECTION}]\n")
+            # settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
+            #settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
             settings.write(f"[{GANDI_SECTION}]\n")
             settings.write("#apikey=YOUR_GANDI_API_KEY\n")
             settings.write(
@@ -254,7 +259,7 @@ class Logger(object):
             self.__logger.addHandler(handler)
             self.__logger.setLevel(logging.INFO)
         else:
-            logging.basicConfig(format="%(asctime)s %(message)s")
+            logging.basicConfig(format="%(asctime)s - %(message)s")
 
     # Read the ini file if it exists.
     def __readConfig(self):
@@ -272,13 +277,13 @@ class Logger(object):
                     f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
                 sys.exit(1)
             self.__logFile = parser.get(
-                REPORTS_SECTION, "logFile", fallback=None)
+                LOGGING_SECTION, "logFile", fallback=None)
             self.__logFileWhen = parser.get(
-                REPORTS_SECTION, "logFileWhen", fallback="midnight")
+                LOGGING_SECTION, "logFileWhen", fallback="midnight")
             self.__logFileInterval = parser.getint(
-                REPORTS_SECTION, "logFileInterval", fallback=3600)
+                LOGGING_SECTION, "logFileInterval", fallback=3600)
             self.__logFileBackupCount = parser.getint(
-                REPORTS_SECTION, "logFileBackupCount", fallback=10)
+                LOGGING_SECTION, "logFileBackupCount", fallback=10)
         else:
             sys.stderr.write("Can't find the configuration file.\n")
             sys.exit(1)
