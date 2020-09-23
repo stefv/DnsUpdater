@@ -93,7 +93,7 @@ class DNSUpdater(object):
             self.__saveCurrentIPAddress()
             hosts = self.__hosts.split(",")
             for host in hosts:
-                self.__updateARecord(host, current_ip_address)
+                self.__updateARecord(host.strip(), current_ip_address)
             self.__logger.info(f"IP address updated on Gandi.")
         else:
             self.__logger.info(f"The IP address didn't change.")
@@ -253,7 +253,7 @@ class Logger(object):
         if self.__logFile != None:
             formatter = logging.Formatter("%(asctime)s - %(message)s")
             handler = logging.handlers.TimedRotatingFileHandler(
-                self.__logFile, when=self.__logFileWhen, interval=self.__logFileInterval, backupCount=self.__logFileBackupCount)
+                self.__getLogFilePath(), when=self.__logFileWhen, interval=self.__logFileInterval, backupCount=self.__logFileBackupCount)
             handler.setFormatter(formatter)
             self.__logger = logging.getLogger()
             self.__logger.addHandler(handler)
@@ -292,6 +292,12 @@ class Logger(object):
     def __getIniFilePath(self):
         dirname = os.path.dirname(__file__)
         filename = os.path.join(dirname, CONFIG_FILE)
+        return filename
+
+    # Retrieve the path to the log file.
+    def __getLogFilePath(self):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, self.__logFile)
         return filename
 
     # Log an error message. Write the message to the stderr and if the errorLog
