@@ -45,6 +45,7 @@ It requires the following Python modules:
 - json
 - datetime
 - logging
+- envelopes
 
 If a module is missing, it must be installed using the command: pip3 install <module_name>
 
@@ -66,6 +67,15 @@ logFileWhen=midnight
 logFileInterval=3600
 logFileBackupCount=10
 
+[Email]
+#smtpServerHost=SMTP_HOST
+smtpServerPort=25
+#smtpServerLogin=SMTP_USER_LOGIN
+#smtpServerPassword=SMTP_USER_PASSWORD
+#emailFromAddress=FROM_EMAIL_ADDRESS
+emailFromName=DNSUpdater
+#emailTo=YOUR_EMAIL
+
 [Gandi]
 #apikey=YOUR_GANDI_API_KEY
 livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A
@@ -79,13 +89,23 @@ The script will then end and stop each time as long as the mandatory parameters 
 | General | version            | yes       | Version of the script for this INI file.                                                                                                                                                   |
 | General | ip                 | no        | Will be automatically valued at the first launch when the mandatory parameters have been setted                                                                                            |
 | General | ddnsHostname       | yes       | The name of the domain hosted in the dynamic domain service (for example: mysite.ddns.net)                                                                                                 |
-| Reports | logFile            | non       | Path to the log file.                                                                                                                                                                      |
-| Reports | logFileWhen        | non       | Set when to rotate the file. The possible values are: S (seconds), M (minutes), H (hours), D (days), midnight (rotation at midnight) W{0-6} (days of the week starting with 0 for Monday). |
-| Reports | logFileInterval    | non       | The interval in seconds, minutes, days, ....                                                                                                                                               |
-| Reports | logFileBackupCount | non       | Number of history to keep.                                                                                                                                                                 |
+| Reports | logFile            | no        | Path to the log file.                                                                                                                                                                      |
+| Reports | logFileWhen        | no        | Set when to rotate the file. The possible values are: S (seconds), M (minutes), H (hours), D (days), midnight (rotation at midnight) W{0-6} (days of the week starting with 0 for Monday). |
+| Reports | logFileInterval    | no        | The interval in seconds, minutes, days, ....                                                                                                                                               |
+| Reports | logFileBackupCount | no        | Number of history to keep.                                                                                                                                                                 |
+| Email   | smtpServerHost     | no        | SMTP host.                                                                                                                                                                                 |
+| Email   | smtpServerPort     | no\*\*    | SMTP port.                                                                                                                                                                                 |
+| Email   | smtpServerLogin    | no\*\*    | User login for this SMTP server.                                                                                                                                                           |
+| Email   | smtpServerPassword | no\*\*    | User password for this SMTP server.                                                                                                                                                        |
+| Email   | emailFromAddress   | no\*\*    | Sender email address.                                                                                                                                                                      |
+| Email   | emailFromName      | no\*\*    | Sender name.                                                                                                                                                                               |
+| Email   | emailTo            | no\*\*    | Email recipient.                                                                                                                                                                           |
 | Gandi   | apikey             | yes       | Gandi's REST API key. Refer to page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                                                                         |
 | Gandi   | livednsRecordUrl   | yes       | URL for calling the A record update service at Gandi. Normally we don't touch it without knowing what we're doing                                                                          |
 | Gandi   | hosts              | yes       | The list of domain names at Gandi separated by commas (for example: mysite1.org,mysite2.net,mysite3.com). There should be no space.                                                        |
+
+\* mandatory if logFile is set.
+\*\* mandatory if smtpServerHost is set.
 
 ### Rights
 

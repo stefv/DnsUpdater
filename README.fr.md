@@ -45,6 +45,7 @@ Il nécessite les modules Python suivants:
 - json
 - datetime
 - logging
+- envelopes
 
 Si un module est manquant, il est nécessaire de l'installer au moyen de la commande: _pip3 install <nom_module>_
 
@@ -66,6 +67,15 @@ logFileWhen=midnight
 logFileInterval=3600
 logFileBackupCount=10
 
+[Email]
+#smtpServerHost=SMTP_HOST
+smtpServerPort=25
+#smtpServerLogin=SMTP_USER_LOGIN
+#smtpServerPassword=SMTP_USER_PASSWORD
+#emailFromAddress=FROM_EMAIL_ADDRESS
+emailFromName=DNSUpdater
+#emailTo=YOUR_EMAIL
+
 [Gandi]
 #apikey=YOUR_GANDI_API_KEY
 livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A
@@ -80,12 +90,22 @@ Le script se terminera alors et s'arrêtera à chaque fois tant que les paramèt
 | General | ip                 | non         | Sera valorisé automatiquement au premier lancement lorsque les paramètres obligatoires auront été renseignés                                                                                           |
 | General | ddnsHostname       | oui         | Le nom de domaine hébergé dans le service de domaine dynamique (par exemple: monsite.ddns.net)                                                                                                         |
 | Reports | logFile            | non         | Chemin du fichier pour les logs.                                                                                                                                                                       |
-| Reports | logFileWhen        | non         | Indique quand faire la rotation du fichier. Les valeurs possibles sont: S (secondes), M (minutes), H (heures), D (jours), midnight (rotation à minuit) W{0-6} (jours de la semaine avec 0 pour lundi). |
-| Reports | logFileInterval    | non         | L'interval de secondes, minutes, jours, ....                                                                                                                                                           |
-| Reports | logFileBackupCount | non         | Nombre d'historiques à garder.                                                                                                                                                                         |
+| Reports | logFileWhen        | non\*       | Indique quand faire la rotation du fichier. Les valeurs possibles sont: S (secondes), M (minutes), H (heures), D (jours), midnight (rotation à minuit) W{0-6} (jours de la semaine avec 0 pour lundi). |
+| Reports | logFileInterval    | non\*       | L'interval de secondes, minutes, jours, ....                                                                                                                                                           |
+| Reports | logFileBackupCount | non\*       | Nombre d'historiques à garder.                                                                                                                                                                         |
+| Email   | smtpServerHost     | non         | Hôte du serveur SMTP.                                                                                                                                                                                  |
+| Email   | smtpServerPort     | non\*\*     | Port du serveur SMTP.                                                                                                                                                                                  |
+| Email   | smtpServerLogin    | non\*\*     | Identifiant de l'utilisateur sur le serveur SMTP.                                                                                                                                                      |
+| Email   | smtpServerPassword | non\*\*     | Mot de passe de l'utilisateur sur le serveur SMTP.                                                                                                                                                     |
+| Email   | emailFromAddress   | non\*\*     | Adresse courriel de l'expéditeur.                                                                                                                                                                      |
+| Email   | emailFromName      | non\*\*     | Nom de l'expéditeur.                                                                                                                                                                                   |
+| Email   | emailTo            | non\*\*     | Adresse du destinataire.                                                                                                                                                                               |
 | Gandi   | apikey             | oui         | La clé API REST de Gandi. Reportez-vous à la page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                                                                       |
 | Gandi   | livednsRecordUrl   | oui         | URL d'appel au service de mise à jour de l'enregistrement A chez Gandi. Normalement on n'y touche pas sans savoir ce que l'on fait                                                                     |
 | Gandi   | hosts              | oui         | La liste des noms de domaines chez Gandi séparés par des virgules (par exemple: monsite1.org,monsite2.net,monsite3.fr). Il ne doit y avoir aucun espace.                                               |
+
+\* obligatoire si logFile est renseigné.
+\*\* obligatoire si smtpServerHost est renseigné.
 
 ### Droits
 

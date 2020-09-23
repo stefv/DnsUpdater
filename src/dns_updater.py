@@ -30,6 +30,7 @@ import json
 import datetime
 import logging
 import logging.handlers
+from envelopes import Envelope, GMailSMTP
 
 VERSION = "1"
 CONFIG_FILE = "dns_updater.ini"
@@ -57,6 +58,9 @@ class DNSUpdater(object):
     # The logger
     __logger = None
 
+    # The email sender.
+    __emailSender = None
+
     # Script version
     __version = None
 
@@ -81,6 +85,9 @@ class DNSUpdater(object):
         self.__logger = Logger()
         self.__readConfig()
         self.__checkConfig()
+
+        self.__emailSender = EmailSender()
+        #self.__emailSender.send("Test 21:53", "Message of the email.")
 
     # Update the A record in the Gandi DNS with the current IP address of the
     # internet box.
@@ -134,9 +141,14 @@ class DNSUpdater(object):
             settings.write("logFileWhen=midnight\n")
             settings.write("logFileInterval=3600\n")
             settings.write("logFileBackupCount=10\n\n")
-            # settings.write(f"[{EMAIL_SECTION}]\n")
-            # settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
-            # settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
+            settings.write(f"[{EMAIL_SECTION}]\n")
+            settings.write("#smtpServerHost=SMTP_HOST\n")
+            settings.write("smtpServerPort=25\n")
+            settings.write("#smtpServerLogin=SMTP_USER_LOGIN\n")
+            settings.write("#smtpServerPassword=SMTP_USER_PASSWORD\n")
+            settings.write("#emailFromAddress=FROM_EMAIL_ADDRESS\n")
+            settings.write("emailFromName=DNSUpdater\n")
+            settings.write("#emailTo=YOUR_EMAIL\n\n")
             settings.write(f"[{GANDI_SECTION}]\n")
             settings.write("#apikey=YOUR_GANDI_API_KEY\n")
             settings.write("livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A\n")
@@ -300,6 +312,72 @@ class Logger(object):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         sys.stdout.write(f"{now} - {message}\n")
         self.__logger.info(message)
+
+
+class EmailSender(object):
+
+    # Host of the SMTP server
+    __smtpServerHost = None
+
+    # Port of the SMTP server
+    __smtpServerPort = None
+
+    # Login of the user for this SMTP server
+    __smtpServerLogin = None
+
+    # Password of the user for this SMTP server
+    __smtpServerPassword = None
+
+    # From email address
+    __emailFromAddress = None
+
+    # Name of the sender
+    __emailFromName = None
+
+    # Email address to
+    __emailTo = None
+
+    # Create and initialize the logger.
+    def __init__(self):
+        self.__readConfig()
+
+    # Read the ini file if it exists.
+    def __readConfig(self):
+        parser = configparser.ConfigParser()
+        dataset = parser.read(self.__getIniFilePath())
+        if len(dataset) > 0:
+            self.__version = parser.get(
+                GENERAL_SECTION, "version", fallback=None)
+            if (self.__version != VERSION):
+                sys.stderr.write(f"The configuration file is for version {self.__version} but the script is for version {VERSION}.\n")
+                sys.stderr.write(f"Please, upgrade your configuration file to respect the new format.\n")
+                sys.stderr.write(f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
+                sys.exit(1)
+            self.__smtpServerHost = parser.get(EMAIL_SECTION, "smtpServerHost", fallback=None)
+            self.__smtpServerPort = parser.getint(EMAIL_SECTION, "smtpServerPort", fallback=25)
+            self.__smtpServerLogin = parser.get(EMAIL_SECTION, "smtpServerLogin", fallback=None)
+            self.__smtpServerPassword = parser.get(EMAIL_SECTION, "smtpServerPassword", fallback=None)
+        else:
+            sys.stderr.write("Can't find the configuration file.\n")
+            sys.exit(1)
+
+    # Retrieve the path to the ini file.
+    def __getIniFilePath(self):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, CONFIG_FILE)
+        return filename
+
+    # Send an email
+    def send(self, subject, message):
+
+        if self.__smtpServerHost != None and self.__smtpServerPort != None and self.__smtpServerLogin != None and self.__smtpServerPassword != None and self.__emailFromAddress != None and self.__emailFromName != None and self.__emailTo != None:
+            envelope = Envelope(
+                from_addr=(self.__emailFromAddress, self.__emailFromName),
+                to_addr=(self.__emailTo),
+                subject=subject,
+                text_body=message
+            )
+            envelope.send(self.__smtpServerHost, port=self.__smtpServerPort, login=self.__smtpServerLogin, password=self.__smtpServerPassword, tls=True)
 
 
 print("===================================================")
