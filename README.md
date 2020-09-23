@@ -32,7 +32,7 @@ Some explanations are needed on the sequence of the different stages:
 
 ## Installation
 
-To work, this script requires a server with Python 3 installed. It is tested and works on Windows and Linux Debian.
+To work, this script requires a computer with Python 3 installed. It is tested and works on Windows and Linux Debian.
 
 It requires the following Python modules:
 
