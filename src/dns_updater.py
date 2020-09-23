@@ -110,8 +110,7 @@ class DNSUpdater(object):
     def __updateARecord(self, host, current_ip_address):
         url = self.__liveDNSRecordUrl.replace("{host}", host)
         data = {"rrset_values": [current_ip_address]}
-        headers = {"Content-type": "application/json",
-                   "Authorization": f"ApiKey {self.__apikey}"}
+        headers = {"Content-type": "application/json", "Authorization": f"ApiKey {self.__apikey}"}
         request = requests.put(url, data=json.dumps(data), headers=headers)
         if (request.status_code == 201):
             self.__logger.info(f"IP address for {host} updated.")
@@ -137,11 +136,10 @@ class DNSUpdater(object):
             settings.write("logFileBackupCount=10\n\n")
             # settings.write(f"[{EMAIL_SECTION}]\n")
             # settings.write("#emailAddresses=EMAIL_ADDRESSES\n")
-            #settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
+            # settings.write("emailSubject=\"[DNSUpdater] Update report\"\n\n")
             settings.write(f"[{GANDI_SECTION}]\n")
             settings.write("#apikey=YOUR_GANDI_API_KEY\n")
-            settings.write(
-                "livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A\n")
+            settings.write("livednsRecordUrl=https://api.gandi.net/v5/livedns/domains/{host}/records/%%40/A\n")
             settings.write("#hosts=YOUR_HOSTS_SEPARATED_BY_COMMA\n")
             settings.close()
 
@@ -156,15 +154,13 @@ class DNSUpdater(object):
             self.__version = parser.get(
                 GENERAL_SECTION, "version", fallback=None)
             if (self.__version != VERSION):
-                self.__logger.info(
-                    f"The configuration file is for version {self.__version} but the script is for version {VERSION}. Please, upgrade your configuration file to respect the new format. If you don't know this format, just rename your old ini file and start again\nthe script.")
+                self.__logger.info(f"The configuration file is for version {self.__version} but the script is for version {VERSION}. " +
+                                   f"Please, upgrade your configuration file to respect the new format. If you don't know this format, just rename your old ini file and start again\nthe script.")
                 sys.exit(1)
             self.__ip = parser.get(GENERAL_SECTION, "ip", fallback=None)
-            self.__ddnsHostname = parser.get(
-                GENERAL_SECTION, "ddnsHostname", fallback=None)
+            self.__ddnsHostname = parser.get(GENERAL_SECTION, "ddnsHostname", fallback=None)
             self.__apikey = parser.get(GANDI_SECTION, "apikey", fallback=None)
-            self.__liveDNSRecordUrl = parser.get(
-                GANDI_SECTION, "livednsRecordUrl", fallback=None)
+            self.__liveDNSRecordUrl = parser.get(GANDI_SECTION, "livednsRecordUrl", fallback=None)
             self.__hosts = parser.get(GANDI_SECTION, "hosts", fallback=None)
         else:
             self.__logger.error("Can't find the configuration file.\n")
@@ -186,8 +182,7 @@ class DNSUpdater(object):
             self.__logger.error("Empty setting for General/ddnsHostname.\n")
             sys.exit(1)
         if (self.__liveDNSRecordUrl == None):
-            self.__logger.error(
-                "Empty setting for General/liveDNSRecordUrl.\n")
+            self.__logger.error("Empty setting for General/liveDNSRecordUrl.\n")
             sys.exit(1)
         if (self.__hosts == None):
             self.__logger.error("Empty setting for General/hosts.\n")
@@ -251,9 +246,8 @@ class Logger(object):
     def __init__(self):
         self.__readConfig()
         if self.__logFile != None:
-            formatter = logging.Formatter("%(asctime)s - %(message)s")
-            handler = logging.handlers.TimedRotatingFileHandler(
-                self.__getLogFilePath(), when=self.__logFileWhen, interval=self.__logFileInterval, backupCount=self.__logFileBackupCount)
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+            handler = logging.handlers.TimedRotatingFileHandler(self.__getLogFilePath(), when=self.__logFileWhen, interval=self.__logFileInterval, backupCount=self.__logFileBackupCount)
             handler.setFormatter(formatter)
             self.__logger = logging.getLogger()
             self.__logger.addHandler(handler)
@@ -269,21 +263,14 @@ class Logger(object):
             self.__version = parser.get(
                 GENERAL_SECTION, "version", fallback=None)
             if (self.__version != VERSION):
-                sys.stderr.write(
-                    f"The configuration file is for version {self.__version} but the script is for version {VERSION}.\n")
-                sys.stderr.write(
-                    f"Please, upgrade your configuration file to respect the new format.\n")
-                sys.stderr.write(
-                    f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
+                sys.stderr.write(f"The configuration file is for version {self.__version} but the script is for version {VERSION}.\n")
+                sys.stderr.write(f"Please, upgrade your configuration file to respect the new format.\n")
+                sys.stderr.write(f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
                 sys.exit(1)
-            self.__logFile = parser.get(
-                LOGGING_SECTION, "logFile", fallback=None)
-            self.__logFileWhen = parser.get(
-                LOGGING_SECTION, "logFileWhen", fallback="midnight")
-            self.__logFileInterval = parser.getint(
-                LOGGING_SECTION, "logFileInterval", fallback=3600)
-            self.__logFileBackupCount = parser.getint(
-                LOGGING_SECTION, "logFileBackupCount", fallback=10)
+            self.__logFile = parser.get(LOGGING_SECTION, "logFile", fallback=None)
+            self.__logFileWhen = parser.get(LOGGING_SECTION, "logFileWhen", fallback="midnight")
+            self.__logFileInterval = parser.getint(LOGGING_SECTION, "logFileInterval", fallback=3600)
+            self.__logFileBackupCount = parser.getint(LOGGING_SECTION, "logFileBackupCount", fallback=10)
         else:
             sys.stderr.write("Can't find the configuration file.\n")
             sys.exit(1)

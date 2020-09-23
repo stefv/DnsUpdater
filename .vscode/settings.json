@@ -1,7 +1,12 @@
 {
-    "python.formatting.blackArgs": [
-        "--line-length 119"
-    ],
-    "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true
+  "python.formatting.autopep8Args": [
+    "--max-line-length",
+    "250",
+    "--experimental"
+  ],
+  "python.formatting.yapfArgs": [
+    "--style",
+    "{based_on_style: chromium, indent_width: 20}"
+  ],
+  "python.formatting.blackArgs": ["--line-length", "230"]
 }
