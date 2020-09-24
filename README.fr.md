@@ -4,6 +4,13 @@ _Read this in [English](README.md)._
 
 Le script _dns_updater.py_ permet la mise à jour de l'enregistrement A sur un DNS [Gandi](https://www.gandi.net). Son utilisation peut être nécessaire lorsque vous hébergez un serveur derrière une box internet et que celle-ci possède une adresse IP publique dynamique alors que vous souhaitez utiliser un nom de domaine hébergé chez [Gandi](https://www.gandi.net). C'est le cas par exemple en France avec le fournisseur d'accès Internet [Orange](https://www.orange.fr)/[Sosh](https://www.sosh.fr).
 
+## Fonctionnalités
+
+Voici la liste des fonctionnalités proposées:
+
+- Met à jour l'IP (enregistrement A) d'un ou plusieurs hôtes hébergés chez [Gandi](https://www.gandi.net),
+- Envoi un courriel lorsque l'IP est modifiée.
+
 ## Prérequis
 
 Pour fonctionner correctement, _dns_updater.py_ nécessite un certain nombre de prérequis. Le choix des fournisseurs est laissé à votre choix. Une exception concerne l'hébergeur du nom de domaine qui ne peut être que [Gandi](https://www.gandi.net), le script utilisant un appel d'API REST dont le format n'est valable pour le moment que chez [Gandi](https://www.gandi.net).
@@ -75,6 +82,7 @@ smtpServerPort=25
 #emailFromAddress=FROM_EMAIL_ADDRESS
 emailFromName=DNSUpdater
 #emailTo=YOUR_EMAIL
+emailChangeResultSubject=[DNSUpdater] IP address changed
 
 [Gandi]
 #apikey=YOUR_GANDI_API_KEY
@@ -84,25 +92,26 @@ hosts=YOUR_HOSTS_SEPARATED_BY_COMMA
 
 Le script se terminera alors et s'arrêtera à chaque fois tant que les paramètres obligatoires n'auront pas été valorisés et décommentés
 
-| Section | Paramètre          | Obligatoire | Description                                                                                                                                                                                            |
-| ------- | ------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| General | version            | oui         | Version du script pour ce fichier INI.                                                                                                                                                                 |
-| General | ip                 | non         | Sera valorisé automatiquement au premier lancement lorsque les paramètres obligatoires auront été renseignés                                                                                           |
-| General | ddnsHostname       | oui         | Le nom de domaine hébergé dans le service de domaine dynamique (par exemple: monsite.ddns.net)                                                                                                         |
-| Reports | logFile            | non         | Chemin du fichier pour les logs.                                                                                                                                                                       |
-| Reports | logFileWhen        | non\*       | Indique quand faire la rotation du fichier. Les valeurs possibles sont: S (secondes), M (minutes), H (heures), D (jours), midnight (rotation à minuit) W{0-6} (jours de la semaine avec 0 pour lundi). |
-| Reports | logFileInterval    | non\*       | L'interval de secondes, minutes, jours, ....                                                                                                                                                           |
-| Reports | logFileBackupCount | non\*       | Nombre d'historiques à garder.                                                                                                                                                                         |
-| Email   | smtpServerHost     | non         | Hôte du serveur SMTP.                                                                                                                                                                                  |
-| Email   | smtpServerPort     | non\*\*     | Port du serveur SMTP.                                                                                                                                                                                  |
-| Email   | smtpServerLogin    | non\*\*     | Identifiant de l'utilisateur sur le serveur SMTP.                                                                                                                                                      |
-| Email   | smtpServerPassword | non\*\*     | Mot de passe de l'utilisateur sur le serveur SMTP.                                                                                                                                                     |
-| Email   | emailFromAddress   | non\*\*     | Adresse courriel de l'expéditeur.                                                                                                                                                                      |
-| Email   | emailFromName      | non\*\*     | Nom de l'expéditeur.                                                                                                                                                                                   |
-| Email   | emailTo            | non\*\*     | Adresse du destinataire.                                                                                                                                                                               |
-| Gandi   | apikey             | oui         | La clé API REST de Gandi. Reportez-vous à la page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                                                                       |
-| Gandi   | livednsRecordUrl   | oui         | URL d'appel au service de mise à jour de l'enregistrement A chez Gandi. Normalement on n'y touche pas sans savoir ce que l'on fait                                                                     |
-| Gandi   | hosts              | oui         | La liste des noms de domaines chez Gandi séparés par des virgules (par exemple: monsite1.org,monsite2.net,monsite3.fr). Il ne doit y avoir aucun espace.                                               |
+| Section | Paramètre                | Obligatoire | Description                                                                                                                                                                                            |
+| ------- | ------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| General | version                  | oui         | Version du script pour ce fichier INI.                                                                                                                                                                 |
+| General | ip                       | non         | Sera valorisé automatiquement au premier lancement lorsque les paramètres obligatoires auront été renseignés                                                                                           |
+| General | ddnsHostname             | oui         | Le nom de domaine hébergé dans le service de domaine dynamique (par exemple: monsite.ddns.net)                                                                                                         |
+| Reports | logFile                  | non         | Chemin du fichier pour les logs.                                                                                                                                                                       |
+| Reports | logFileWhen              | non\*       | Indique quand faire la rotation du fichier. Les valeurs possibles sont: S (secondes), M (minutes), H (heures), D (jours), midnight (rotation à minuit) W{0-6} (jours de la semaine avec 0 pour lundi). |
+| Reports | logFileInterval          | non\*       | L'interval de secondes, minutes, jours, ....                                                                                                                                                           |
+| Reports | logFileBackupCount       | non\*       | Nombre d'historiques à garder.                                                                                                                                                                         |
+| Email   | smtpServerHost           | non         | Hôte du serveur SMTP.                                                                                                                                                                                  |
+| Email   | smtpServerPort           | non\*\*     | Port du serveur SMTP.                                                                                                                                                                                  |
+| Email   | smtpServerLogin          | non\*\*     | Identifiant de l'utilisateur sur le serveur SMTP.                                                                                                                                                      |
+| Email   | smtpServerPassword       | non\*\*     | Mot de passe de l'utilisateur sur le serveur SMTP.                                                                                                                                                     |
+| Email   | emailFromAddress         | non\*\*     | Adresse courriel de l'expéditeur.                                                                                                                                                                      |
+| Email   | emailFromName            | non\*\*     | Nom de l'expéditeur.                                                                                                                                                                                   |
+| Email   | emailTo                  | non\*\*     | Adresse du destinataire.                                                                                                                                                                               |
+| Email   | emailChangeResultSubject | non\*\*     | Objet du courriel envoyé lorsque l'adresse IP est mise à jour.                                                                                                                                         |
+| Gandi   | apikey                   | oui         | La clé API REST de Gandi. Reportez-vous à la page https://docs.gandi.net/en/domain_names/advanced_users/api.html                                                                                       |
+| Gandi   | livednsRecordUrl         | oui         | URL d'appel au service de mise à jour de l'enregistrement A chez Gandi. Normalement on n'y touche pas sans savoir ce que l'on fait                                                                     |
+| Gandi   | hosts                    | oui         | La liste des noms de domaines chez Gandi séparés par des virgules (par exemple: monsite1.org,monsite2.net,monsite3.fr). Il ne doit y avoir aucun espace.                                               |
 
 \* obligatoire si logFile est renseigné.
 \*\* obligatoire si smtpServerHost est renseigné.
