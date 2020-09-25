@@ -19,7 +19,7 @@
 
 # Version history:
 # v1.1 : Adding rotating logs
-#        Adding report email when the IP address is updated
+#        Adding email report when the IP address is updated
 # v1.0 : First version
 
 import os
