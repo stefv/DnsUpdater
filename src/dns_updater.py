@@ -18,7 +18,9 @@
 # The original web site of this script is: https://github.com/stefv/DnsUpdater
 
 # Version history:
-# v1.0 : first version
+# v1.1 : Adding rotating logs
+#        Adding report email when the IP address is updated
+# v1.0 : First version
 
 import os
 import sys
