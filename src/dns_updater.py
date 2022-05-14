@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/bin/python3
 
 # Copyright 2020 https://github.com/stefv
 #
@@ -18,23 +18,27 @@
 # The original web site of this script is: https://github.com/stefv/DnsUpdater
 
 # Version history:
+# v2.0 : Choice between to use a dynamic DNS or to use ipify to find the IP 
+#        address.
+#        Simplifying the log rotation settings.
 # v1.1 : Adding rotating logs
 #        Adding email report when the IP address is updated
 # v1.0 : First version
 
-import os
-import sys
-import socket
-import pathlib
 import configparser
-import requests
-import json
 import datetime
+import json
 import logging
 import logging.handlers
+import os
+import pathlib
+import socket
+import sys
+import urllib.request
+import requests
 from envelopes import Envelope, GMailSMTP
 
-VERSION = "1.1"
+VERSION = "2"
 CONFIG_FILE = "dns_updater.ini"
 
 GENERAL_SECTION = "General"
@@ -66,13 +70,13 @@ class Base(object):
             # ddnsHostname set. Only the user can set the ddnsHostname value.
             settings = open(self.getIniFilePath(), "w")
             settings.write(f"[{GENERAL_SECTION}]\n")
-            settings.write("version=1\n")
+            settings.write("version=2\n")
+            settings.write("mode=dyndns|ipify\n")
+            settings.write("simulate=false\n")
             settings.write("#ddnsHostname=DYNAMIC_DNS_HOST\n")
             settings.write("ip=\n\n")
             settings.write(f"[{LOGGING_SECTION}]\n")
             settings.write("logFile=dns_updater.log\n")
-            settings.write("logFileWhen=midnight\n")
-            settings.write("logFileInterval=3600\n")
             settings.write("logFileBackupCount=10\n\n")
             settings.write(f"[{EMAIL_SECTION}]\n")
             settings.write("#smtpServerHost=SMTP_HOST\n")
@@ -131,6 +135,9 @@ class DNSUpdater(BaseWithLogs):
     # The API key of Gandi
     __apikey = None
 
+    # The mode to find the IP (dyndns or ipify)
+    __mode = None
+
     # The dynamic DNS host
     __ddnsHostname = None
 
@@ -139,6 +146,9 @@ class DNSUpdater(BaseWithLogs):
 
     # Hosts to update
     __hosts = None
+
+    # Simulate
+    __simulate = False
 
     # Initialize the configuration file.
     def __init__(self):
@@ -157,8 +167,11 @@ class DNSUpdater(BaseWithLogs):
             self.getLogger().info(f"Previous IP address: {previous_ip_address}")
             self.__saveCurrentIPAddress()
             hosts = self.__hosts.split(",")
-            for host in hosts:
-                self.__updateARecord(host.strip(), current_ip_address)
+
+            if (not self.__simulate):
+                for host in hosts:
+                    self.__updateARecord(host.strip(), current_ip_address)
+
             self.getLogger().info(f"IP address updated on Gandi.")
             self.__emailSender.sendChangeResult()
         else:
@@ -191,9 +204,12 @@ class DNSUpdater(BaseWithLogs):
                 sys.exit(1)
             self.__ip = parser.get(GENERAL_SECTION, "ip", fallback=None)
             self.__ddnsHostname = parser.get(GENERAL_SECTION, "ddnsHostname", fallback=None)
+            self.__mode = parser.get(GENERAL_SECTION, "mode", fallback=None)
             self.__apikey = parser.get(GANDI_SECTION, "apikey", fallback=None)
             self.__liveDNSRecordUrl = parser.get(GANDI_SECTION, "livednsRecordUrl", fallback=None)
             self.__hosts = parser.get(GANDI_SECTION, "hosts", fallback=None)
+            if (parser.get(GANDI_SECTION, "simulate", fallback=False) == "true"):
+                self.__simulate = True
         else:
             self.getLogger().error("Can't find the configuration file.")
             sys.exit(1)
@@ -210,9 +226,6 @@ class DNSUpdater(BaseWithLogs):
         if (self.__apikey == None):
             self.getLogger().error("Empty setting for General/apikey.")
             sys.exit(1)
-        if (self.__ddnsHostname == None):
-            self.getLogger().error("Empty setting for General/ddnsHostname.")
-            sys.exit(1)
         if (self.__liveDNSRecordUrl == None):
             self.getLogger().error("Empty setting for General/liveDNSRecordUrl.")
             sys.exit(1)
@@ -221,6 +234,16 @@ class DNSUpdater(BaseWithLogs):
             sys.exit(1)
         if (self.__ip == None or self.__ip == ""):
             self.__saveCurrentIPAddress()
+
+        if (self.__mode == None):
+            self.getLogger().error("Empty setting for General/mode.")
+            sys.exit(1)
+        if (self.__mode != "dyndns" and self.__mode != "ipify"):
+            self.getLogger().error("The setting General/mode can use only dyndns or ipify.")
+            sys.exit(1)
+        if (self.__mode == "dyndns" and self.__ddnsHostname == None):
+            self.getLogger().error("Empty setting for General/ddnsHostname.")
+            sys.exit(1)
 
     # Retrieve the previous IP address from the data file
     def __getPreviousIPAddress(self):
@@ -249,7 +272,17 @@ class DNSUpdater(BaseWithLogs):
     # Retrieve the current IP address of the server (using a dynamic IP address
     # provider: ie. no-ip)
     def __getCurrentIpAddress(self):
-        ip_address = socket.gethostbyname(self.__ddnsHostname)
+
+        try:
+            if (self.__mode == "ipify"):
+                ip_address = urllib.request.urlopen("https://api.ipify.org/").read()
+                ip_address = ip_address.decode()
+            else:
+                ip_address = socket.gethostbyname(self.__ddnsHostname)
+        except Exception as ex:
+            self.getLogger().error("Can't retrieve the current IP address.")
+            sys.exit(1)
+
         return ip_address
 
 # This class is to log the messages (errors, informations) to the stderr and/or
@@ -264,12 +297,6 @@ class Logger(Base):
 
     # The log file from the ini.
     __logFile = None
-
-    # When to rotate the log file.
-    __logFileWhen = "midnight"
-
-    # Interval in seconds.
-    __logFileInterval = 3600
 
     # How many files to keep in the history.
     __logFileBackupCount = 10
@@ -289,7 +316,10 @@ class Logger(Base):
             self.__readConfig()
             if self.__logFile != None:
                 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-                handler = logging.handlers.TimedRotatingFileHandler(self.__getLogFilePath(), when=self.__logFileWhen, interval=self.__logFileInterval, backupCount=self.__logFileBackupCount)
+                handler = logging.handlers.TimedRotatingFileHandler(
+                    self.__getLogFilePath(), when='D', interval=1, 
+                    backupCount=self.__logFileBackupCount)
+
                 handler.setFormatter(formatter)
                 self.__loggingLogger = logging.getLogger()
                 self.__loggingLogger.addHandler(handler)
@@ -317,8 +347,6 @@ class Logger(Base):
                 sys.stderr.write(f"If you don't know this format, just rename your old ini file and start again\nthe script.\n")
                 sys.exit(1)
             self.__logFile = parser.get(LOGGING_SECTION, "logFile", fallback=None)
-            self.__logFileWhen = parser.get(LOGGING_SECTION, "logFileWhen", fallback="midnight")
-            self.__logFileInterval = parser.getint(LOGGING_SECTION, "logFileInterval", fallback=3600)
             self.__logFileBackupCount = parser.getint(LOGGING_SECTION, "logFileBackupCount", fallback=10)
         else:
             sys.stderr.write("Can't find the configuration file.\n")
@@ -413,6 +441,7 @@ class EmailSender(BaseWithLogs):
     # Send an email
     def send(self, subject, message):
 
+        self.getLogger().info("Sending an information email about the change.\n")
         if self.__smtpServerHost != None and self.__smtpServerPort != None and self.__smtpServerLogin != None and self.__smtpServerPassword != None and self.__emailFromAddress != None and self.__emailFromName != None and self.__emailTo != None:
             envelope = Envelope(
                 from_addr=(self.__emailFromAddress, self.__emailFromName),
@@ -421,6 +450,7 @@ class EmailSender(BaseWithLogs):
                 text_body=message
             )
             envelope.send(self.__smtpServerHost, port=self.__smtpServerPort, login=self.__smtpServerLogin, password=self.__smtpServerPassword, tls=True)
+            self.getLogger().info("Email sent.\n")
 
     # Send an email with the effective changes.
     def sendChangeResult(self):
